@@ -201,8 +201,60 @@ selinux用户和管理员手册
 
   * 缩略图保护
     防止锁屏后，插入U盘或者光盘，通过自动弹出的缩略图进行攻击。
+    
 - sepolicy组件
+    sepolicy工具提供了一套查询已安装策略的特性。这些特性现在被分开的工具提供，比如：sepolgen或者setrans。
+    这套工具允许你生成转换策略、man手册页、甚至新的策略模块，这使用户可以较容易访问而且较好的理解selinux策略。
+    安装policycoreutils-devel包，这个包提供了sepolicy。
+    sepolicy特性如下：
+    booleans	查询selinux策略的开关描述
+    communicate	查询selinux策略，看域之间是否可以进行通讯。
+    generate	生成selinux策略模块模板
+    gui		selinux策略的图形化用户接口
+    interface	列出selinux策略接口
+    manpage	生成selinux man手册页
+    network	查询selinux策略的网络信息
+    transition	查询selinux策略和生成程序转化策略
 
+  * sepolicy组件
+    1 sepolicy python绑定
+
+    2 生成selinux策略模块：sepolicy generate（或者sepolgen命令）
+      sepolicy generate -n mylocale --admin_user root
+      sepolicy generate命令执行，下列文件是被生成的：
+      NAME.te 类型增强文件(type enforcing)
+      NAME.if 接口文件
+      NAME_selinux.spec RPM spec文件
+      NAME.sh shell脚本，用于编译、安装和修复标签等。
+      NAME.fc 设置文件上下文文件
+
+    3 理解域转换：sepolicy transition（或者setrans）
+      sepolicy transition -s [source domain] -t [targeted domain]
+      如果没有制定-t时，会列出所有可能转换到的域。@是可执行的意思。
+      ~]$ sepolicy transition -s httpd_t
+	httpd_t @ httpd_suexec_exec_t --> httpd_suexec_t
+	httpd_t @ mailman_cgi_exec_t --> mailman_cgi_t
+	httpd_t @ abrt_retrace_worker_exec_t --> abrt_retrace_worker_t
+	httpd_t @ dirsrvadmin_unconfined_script_exec_t --> dirsrvadmin_unconfined_script_t
+	httpd_t @ httpd_unconfined_script_exec_t --> httpd_unconfined_script_t
+	~]$ sepolicy transition -s httpd_t -t system_mail_t
+	httpd_t @ exim_exec_t --> system_mail_t
+	httpd_t @ courier_exec_t --> system_mail_t
+	httpd_t @ sendmail_exec_t --> system_mail_t
+	httpd_t ... httpd_suexec_t @ sendmail_exec_t --> system_mail_t
+	httpd_t ... httpd_suexec_t @ exim_exec_t --> system_mail_t
+	httpd_t ... httpd_suexec_t @ courier_exec_t --> system_mail_t
+	httpd_t ... httpd_suexec_t ... httpd_mojomojo_script_t @ sendmail_exec_t --> system_mail_t
+    4 生成man手册页：sepolicy manpage
+      man手册页包含下列几个部分，这些部分提供了关于受限域的selinux策略的多个部分。
+      Entrypoints部分包含了所有的在域转换期间需要执行的所有可执行文件。
+      Process Types部分列出了所有以目标域前缀开始的进程。
+      Booleans 部分列出了和域相关的所有开关。
+      Port Types包含了和域前缀相匹配的端口类型，以及描述了和这些端口类型相匹配的端口号。
+      Managed Files部分描述了域允许写的类型，以及和这些类型相关联的默认路径。
+      File Contexts部分包含了和域相关的文件类型以及和这些类型相关的默认路径。
+      Sharing Files部分包含了如何用域共享类型，比如public_content_t。
+      
 - 受限用户
 
 - 用沙盒的安全程序
