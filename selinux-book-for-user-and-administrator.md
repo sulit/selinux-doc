@@ -163,8 +163,44 @@ selinux用户和管理员手册
     *注意* 尽量使用-d选项而不是-r选项。
 
   * 多层次安全
+    原则：不向上读，不向下写。
 
-    
+    1 MLS和系统权限
+
+    2 运行selinux时使能mls
+      yum install selinux-policy-mls，修改/etc/selinux/config中的SELINUX=permissive，SELINUXTYPE=mls，
+      重启后，grep "SELinux is preventing" /var/log/messages没有消息，然后修改SELINUX=enforcing，然后重启。
+
+    3 创建一个特定mls层次的用户
+      useradd -Z staff_u john
+      passwd john
+      semanage login -l
+      semanage login --modify --range s2:c100 john
+      semanage login -l
+      chcon -R -l s2:c100 /home/john
+    4 设置多实例目录
+      主要是针对于/tmp/和/var/tmp/这种
+      解注释/etc/security/namespace.conf中的
+      #/tmp     /tmp-inst/       	level      root,adm
+      #/var/tmp /var/tmp/tmp-inst/   	level      root,adm
+      #$HOME    $HOME/$USER.inst/     level
+      确保/etc/pam.d/login加载了pam_namespace.so， 然后重启系统。
+
+  * 文件名转换
+
+    filetrans_pattern(unconfined_t, admin_home_t, ssh_home_t, dir, ".ssh")
+    这句策略的意思是一个unconfined_t的进程，在admin_home_t的家目录下生成.ssh目录，这个.ssh目录将被打上ssh_home_t的标签。
+    类似的还有：
+    filetrans_pattern(staff_t, user_home_dir_t, httpd_user_content_t, dir, "public_html")
+    filetrans_pattern(thumb_t, user_home_dir_t, thumb_home_t, file, "missfont.log")
+    filetrans_pattern(kernel_t, device_t, xserver_misc_device_t, chr_file, "nvidia0")
+    filetrans_pattern(puppet_t, etc_t, krb5_conf_t, file, "krb5.conf")
+
+  * 不使能ptrace（）功能
+    setsebool -P deny_ptrace on
+
+  * 缩略图保护
+    防止锁屏后，插入U盘或者光盘，通过自动弹出的缩略图进行攻击。
 - sepolicy组件
 
 - 受限用户
