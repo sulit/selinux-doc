@@ -106,9 +106,68 @@ selinux用户和管理员手册
     快速参考：semanage fcontext -a options [file-name|directory-name]；restorecon -v [file-name|directory-name]
     *主要* semanage fcontext -a 需要使用全路径，不然可能错误的标记文件。
 
+  * file_t和default_t类型 如果文件系统支持扩展属性，那么file_t指没有添加扩展属性的默认类型。在正确打标签的文件系统中不存在。
+  在文件上下文配置中，file_t也绝不会被用。default_t类型的文件指文件上下文配置中没有任何匹配的那些文件。区别于那些没有上下文的
+  文件。这些文件通常不能被受限域访问，如果要能使被访问，需要更新这些文件的文件上下文配置。
+
+  * 挂载文件系统
+
+    如果文件系统支持扩展属性被挂载，安全属性上下文是从文件的security.selinux扩展属性中获得。如果文件系统不支持扩展属性，
+    会指定一个单一的、从策略配置获得的默认安全上下文。mount -o context 可以覆盖已经存在的扩展属性。
+
+    1 上下文挂载 可以用mount -o context=SELinux_user:role:type:level指定上下文挂载，这些改变不会被写到磁盘上。
+
+    2 改变默认上下文 mount /dev/sda2 /test/ -o defcontext="system_u:object_r:samba_share_t:s0"
+    defcontext指定那些没有被打标签的文件的默认安全上下文。
+
+    3 挂载nfs卷 nfs默认挂载是以nfs_t类型，如果想要nfs被httpd访问，需要用context选项重写nfs_t类型。
+
+    4 ~]# mount server:/export/web /local/web -o context="system_u:object_r:httpd_sys_content_t:s0"
+    ~]# mount server:/export/database /local/database -o context="system_u:object_r:mysqld_db_t:s0"
+    第二次挂载失败，在/var/log/messages看到下列信息
+    kernel: SELinux: mount invalid. Same superblock, different security settings for (dev 0:15, type nfs)
+    需要用-o nosharecache,context选项。
+    5 上下文挂载持久化 需要添加server:/export /local/mount/ nfs context="system_u:object_r:httpd_sys_content_t:s0" 0 0到/etc/fstab
+
+  * 维护selinux标签
+
+    主要是处理拷贝、移动和打包文件和目录时，如何保留selinux上下文
+
+    1 拷贝文件和目录 cp --preserve=context file1 /var/www/html/ 保留上下文信息。
+    cp --context=system_u:object_r:samba_share_t:s0 file1 file2 以新的上下文复制文件
+    cp覆盖文件时，被覆盖文件的上下文不会发生变化。
+
+    2 移动文件时，移动的这个文件的上下文不会发生变化。
+
+    3 检查默认selinux上下文 matchpathcon可以检查文件和目录是否有正确的上下文。
+
+    4 用tar打包文件 tar --selinux会保留上下文。--xattrs选项可以保留所有的扩展属性。
+
+    5 用star打包文件 star -xattr -H=exustar可以保留上下文。
+
+  * 信息收集工具
+
+    * avcstat、seinfo、sesearch
+
+  * 优先级和不使能selinux策略模块
+
+    semodule -X 400 -i sandbox.pp 以优先级400安装或者替换模块
+
+    semodule --list-modules=full | grep sandbox 查看模块启用信息
+
+    semodule -X 400 -r sandbox 移除优先级为400的sanbox模块，模块移除后就真的从文件系统删除了，
+    如果要重新启动，需要重新安装包含这个模块的策略包。
+
+    semodule -d [module_name] 不使能module_name模块
+
+    *注意* 尽量使用-d选项而不是-r选项。
+
+  * 多层次安全
+
+    
 - sepolicy组件
 
-- 限制用户
+- 受限用户
 
 - 用沙盒的安全程序
 
