@@ -257,6 +257,49 @@ selinux用户和管理员手册
       
 - 受限用户
 
+      在RedHat企业版，用户都被默认映射到unconfined_u SELinux用户。被unconfined_u运行的所有进程都是在unconfined_t域中。
+      这表示在标准linux DAC策略的限制下，这些用户可以访问系统。然后，大量的受限SELinux用户在红帽企业版中是使能的。这表示这些用
+      户是被严格限制在各自的功能集里。每个linux用户是通过SELinux策略映射到一个SELinux用户，允许linux用户继承在SELinux用户的
+      限制，例如不可以进行下列操作：运行X系统、使用网络、运行setuid应用、运行su或者sudo命令。
+      被SELinux用户user_u运行的程序是在user_t域中。这样的进程可以连接网络，但是不可以运行su或者sudo命令。这就避免系统来自
+      user的修改。
+
+    1 linux和selinux用户映射
+      作为root，输入semanage login -l查看linux用户和selinux用户之间的映射。在红帽企业版中，Linux用户默认被映射到SELinux __default__
+      （这个被映射到SELinux unconfined_u用户）登录。useradd没有选项创建用户时，他们是被映射到SELinux unconfined_u用户。下面是默认映射：
+      __default__    unconfined_u    s0-s0:c0.c1023    *
+
+    2 创建受限新用户：useradd
+      映射到unconfined_u的linux用户运行在unconfined_t域中。这是可以通过id -Z查看的。
+      useradd -Z user_u useruuser 创建映射到selinux user_u用户的linux useruuser用户。
+      semanage login -l 查看结果
+      作为root，指派useruuser的密码。
+      userdel -Z -r useruuser 删除用户
+
+    3 限制已经存在的linux用户：semanage login
+      semanage login -a -s user_u newuser
+      semanage login -d newuser 删除映射
+
+    4 改变默认映射
+      把默认映射从unconfined_u改到user_u：
+      semanage login -m -S targeted -s "user_u" -r s0 __default__
+
+    5 xguest:报箱模式
+      xguest包提供了一个报箱账户。这个账户通常被用在图书馆、机场、银行等地方。这个用户是非常受限的，只允许用户登录使用
+      firefox浏览器。来宾账户是被指派到xguest_u，登录进这个账户，做的任何改变，在注销时都会丢失。
+
+    6 用户执行程序的开关
+      不允许linux用户在他们的家目录下和/tmp目录（用户有写权限）下执行应用程序，可以避免有缺陷或者恶意的应用
+      修改用户拥有的文件。setsebool [-P] 可以配置这个特性的开关。
+      guest_t
+      setsebool -P guest_exec_content off可以避免在guest_t域的用户在用户家目录和/tmp目录执行应用程序。
+      xguest_t
+      setsebool -P xguest_exec_content off可以避免在xguest_t域的用户在用户家目录和/tmp目录执行应用程序。
+      user_t
+      setsebool -P user_exec_content off可以避免在user_t域的用户在用户家目录和/tmp目录执行应用程序。
+      staff_t
+      setsebool -P staff_exec_content off可以避免在staff_t域的用户在用户家目录和/tmp目录执行应用程序。
+
 - 用沙盒的安全程序
 
 - svirt
