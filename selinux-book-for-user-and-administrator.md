@@ -301,10 +301,27 @@ selinux用户和管理员手册
       setsebool -P staff_exec_content off可以避免在staff_t域的用户在用户家目录和/tmp目录执行应用程序。
 
 - 用沙盒的安全程序
+  sandbox安全工具增加了一些安全策略允许系统管理员在受限域中运行一个应用。创建文件和访问网络的权限约束是被定义的。
+  这使在没有系统损坏风险的情况下，可以安全地进行一些不受信软件的进程特点。需要安装policycoreutils-sandbox。
+
+  1 用沙箱运行一个应用
+    sandbox [options] application_under_test
+    运行一个图形化的应用
+    sandbox -X evince
+    从一个会话保存数据到下一个：
+    sandbox -H sandbox/home -T sandbox/tmp -X firefox 这个应用不可以打开或者创建非sandbox_x_file_t
+    的文件。
+    在沙盒中访问网络也是不可以的。要允许访问，用sandbox_web_t。例如：sandbox ‐X ‐t sandbox_web_t firefox。
+    *注意* sanbox_net_t标签允许不受限的、双向的网络访问到所有网络端口。
+    sandbox_web_t只允许要求的网络浏览端口的连接。使用sandbox_net_t时需要小心，只有必要的时候才使用。
 
 - svirt
 
 - 安全linux容器
+
+  无。可以参考
+  https://access.redhat.com/documentation/en/red-hat-enterprise-linux-atomic-host/version-7/getting-started-with-containers/#introduction_to_linux_containers
+  中的SELINUX部分。
 
 - selinux systemd访问控制
 
