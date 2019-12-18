@@ -1,0 +1,21 @@
+#!/bin/sh
+
+POLICY_LOCATION=source dir
+
+MACRONAME="$1";
+if [ -d ${POLICY_LOCATION}/policy/support ];
+then
+  pushd ${POLICY_LOCATION}/policy/support > /dev/null 2>&1;
+elif [ -d ${POLICY_LOCATION}/include/support ];
+then
+  pushd ${POLICY_LOCATION}/include/support > /dev/null 2>&1;
+else
+  echo "Variable POLICY_LOCATION is not properly defined.";
+  return 1;
+fi
+for FILE in *.spt;
+do
+  grep -A 9999 "define(\`${MACRONAME}'" ${FILE} | grep -B 999 -m 1 "')";
+done
+popd > /dev/null 2>&1;
+

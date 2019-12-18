@@ -1,0 +1,21 @@
+#!/bin/sh
+
+POLICY_LOCATION=source dir
+
+REGEXP="$1";
+if [ -d ${POLICY_LOCATION}/policy/modules ];
+then
+  pushd ${POLICY_LOCATION}/policy/modules > /dev/null 2>&1;
+elif [ -d ${POLICY_LOCATION}/include ];
+then
+  pushd ${POLICY_LOCATION}/include > /dev/null 2>&1;
+else
+  echo "Variable POLICY_LOCATION is not properly defined.";
+  return 1;
+fi
+for FILE in */*.if;
+do
+  awk "BEGIN { P=1 } /(interface\(|template\()/ { NAME=\$0; P=0 }; /${REGEXP}/ { if (P==0) {P=1; print NAME}; if (NAME!=\$0) print };" ${FILE} | sed -e "s:^:${FILE}\: :g";
+done
+popd > /dev/null 2>&1;
+

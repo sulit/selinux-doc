@@ -1,0 +1,21 @@
+#!/bin/sh
+
+POLICY_LOCATION=source dir
+
+INTERFACE="$1";
+if [ -d ${POLICY_LOCATION}/policy/modules ];
+then
+  pushd ${POLICY_LOCATION}/policy/modules > /dev/null 2>&1;
+elif [ -d ${POLICY_LOCATION}/include ];
+then
+  pushd ${POLICY_LOCATION}/include > /dev/null 2>&1;
+else
+  echo "Variable POLICY_LOCATION is not properly defined.";
+  return 1;
+fi
+for FILE in */*.if;
+do
+  grep -A 9999 "\(interface(\`${INTERFACE}'\|template(\`${INTERFACE}'\)" ${FILE} | grep -B 9999 -m 1 "^')";
+done
+popd > /dev/null 2>&1;
+

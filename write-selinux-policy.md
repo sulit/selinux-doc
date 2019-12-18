@@ -56,4 +56,38 @@
     3 rhsummit.if 文件包含了访问rhsummit_t类型的接口
 
     4 rhsummit.sh 是rhsummit服务编译和安装selinux策略的脚本
+
+  * SELinux进程转换规则
+    sesearch -T -s init_t -t rhsummit_exec_t
+
+  * 在ausearch输出中的AVC信息
+    ausearch -m AVC -ts recent
+
+  * 生成PID文件相关的AVC信息
+    /var/run/rhsummit.pid应该有一个通用的标签rhsummit_pid_t代替var_run_t
+
+  * rhsummit.te
+    + type rhsummit_pid_t;
+    + files_pid_file(rhsummit_pid_t)
+    + manage_files_pattern(rhsummit_t, rhsummit_pid_t, rhsummit_pid_t)
+    + files_pid_filetrans(rhsummit_t, rhsummit_pid_t, { file })
+
+  * rhsummit.fc
+
+    + /var/run/rhsummit.* -- gen_context(system_u:object_r:rhsummit_pid_t,s0)
+
+  * 读/proc相关的AVC信息
+
+    rhsummit.te
+    + kernel_read_system_state(rhsummit_t)
+
+  * 和网络访问相关连的AVC信息
+
+    rhsummit .te
+    + corenet_tcp_connect_http_port(rhsummit_t)
+    + sysnet_read_config(rhsummit_t)
+
+  * 然后检查看还有没有AVC的信息
+    # ausearch -m AVC -ts recent
+    
   
